@@ -1,0 +1,1681 @@
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Volume2, VolumeX, Camera, Mic, Flame, Wind, Hand, XCircle, Heart, Sparkles, Download, PenTool, User, Lock, Eye, EyeOff, MessageCircle, Bell, ChevronLeft, Play, Pause, SkipBack, SkipForward, Cloud, ArrowRight, ListMusic } from 'lucide-react';
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import gsap from 'gsap';
+import confetti from 'canvas-confetti';
+import html2canvas from 'html2canvas';
+
+// --- 1. CONSTANTS & ASSETS ---
+const RECIPIENT_NAME = "小叶";
+const SENDER_NAME = "小马"; 
+
+// 1. GLOBAL BACKGROUND MUSIC URL
+const BGM_URL = 'https://audio.fukit.cn/autoupload/f/IeSYb0Mnf1Z62nIKYGB4NyfNcKcqEnRmcljopnyJoMs/20251215/tju5/7a2ac1e3fd83618b119afa5b1aaf0c2b.mp3';
+
+// 2. VINYL PLAYER SONG URL
+const VINYL_SONG_URL = 'https://audio.fukit.cn/autoupload/f/IeSYb0Mnf1Z62nIKYGB4NyfNcKcqEnRmcljopnyJoMs/20251215/Wahg/42651_LOW_20250602141342_1_206013_M017967.mp3';
+
+const ASSETS = {
+  balloons: [
+    'https://test.fukit.cn/autoupload/f/IeSYb0Mnf1Z62nIKYGB4NyfNcKcqEnRmcljopnyJoMs/20251214/ID9X/4276X4224/balloon1.png/webp',
+    'https://test.fukit.cn/autoupload/f/IeSYb0Mnf1Z62nIKYGB4NyfNcKcqEnRmcljopnyJoMs/20251214/SeRS/4320X4288/balloon2.png/webp',
+    'https://test.fukit.cn/autoupload/f/IeSYb0Mnf1Z62nIKYGB4NyfNcKcqEnRmcljopnyJoMs/20251214/mzlX/4284X4252/balloon3.png/webp'
+  ],
+  giftImage: './images/usagi-surprise.png',
+  loginBackground: 'https://xland.eu.org/autoupload/f/IeSYb0Mnf1Z62nIKYGB4NyfNcKcqEnRmcljopnyJoMs/20251211/js6e/1922X1074/background.jpg', 
+  sounds: {
+    bgm: BGM_URL,
+  }
+};
+
+const BIRTHDAY_LETTER = `祝你生日快乐！
+愿你像乌萨奇一样无忧无虑，
+被温暖包围，
+暴富、开心、健康！
+所有美好如期而至~`;
+
+const PHOTOS = [
+  { id: 1, url: 'https://picsum.photos/800/800?random=11', rotation: -3 },
+  { id: 2, url: 'https://picsum.photos/800/800?random=12', rotation: 2 },
+  { id: 3, url: 'https://picsum.photos/800/800?random=13', rotation: -1 },
+  { id: 4, url: 'https://picsum.photos/800/800?random=14', rotation: 4 },
+  { id: 5, url: 'https://picsum.photos/800/800?random=15', rotation: -2 },
+  { id: 6, url: 'https://picsum.photos/800/800?random=16', rotation: 3 },
+  { id: 7, url: 'https://picsum.photos/800/800?random=17', rotation: -4 },
+  { id: 8, url: 'https://picsum.photos/800/800?random=18', rotation: 1 },
+  { id: 9, url: 'https://picsum.photos/800/800?random=19', rotation: -2 }
+];
+
+// --- 2. COMPONENTS ---
+
+// Light Overlay Component
+const LightOverlay = () => {
+  const lights = useMemo(() => Array.from({ length: 6 }).map((_, i) => ({
+    id: i,
+    x: Math.random() * 100,
+    y: Math.random() * 100,
+    scale: Math.random() * 0.5 + 0.8,
+    duration: Math.random() * 10 + 20,
+  })), []);
+
+  return (
+    <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+      {lights.map(l => (
+        <motion.div
+          key={l.id}
+          className="absolute rounded-full bg-yellow-200/20 blur-[80px]"
+          style={{
+            left: `${l.x}%`,
+            top: `${l.y}%`,
+            width: '40vw',
+            height: '40vw',
+          }}
+          animate={{
+            x: [0, 50, -50, 0],
+            y: [0, -50, 50, 0],
+            scale: [l.scale, l.scale * 1.2, l.scale]
+          }}
+          transition={{
+            duration: l.duration,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+        />
+      ))}
+    </div>
+  );
+};
+
+// Scene Decorations (Grass & Clouds)
+const SceneDecorations = () => {
+  return (
+    <>
+       {/* Clouds - Top Layer */}
+       <div className="absolute top-0 w-full z-10 pointer-events-none opacity-80">
+          <motion.div 
+             animate={{ x: [-20, 20, -20] }} 
+             transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+             className="absolute top-10 left-10 text-white/40"
+          >
+             <Cloud size={120} fill="currentColor" className="drop-shadow-lg" />
+          </motion.div>
+          <motion.div 
+             animate={{ x: [20, -20, 20] }} 
+             transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
+             className="absolute top-24 right-20 text-white/30"
+          >
+             <Cloud size={90} fill="currentColor" className="drop-shadow-md" />
+          </motion.div>
+          <motion.div 
+             animate={{ x: [-10, 10, -10] }} 
+             transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
+             className="absolute top-5 left-1/2 text-white/20"
+          >
+             <Cloud size={150} fill="currentColor" className="drop-shadow-xl" />
+          </motion.div>
+       </div>
+
+       {/* Grass - Bottom Layer */}
+       <div className="absolute bottom-0 w-full h-32 z-10 pointer-events-none opacity-60">
+          <svg viewBox="0 0 1440 320" className="absolute bottom-0 w-full h-full text-green-700/20" preserveAspectRatio="none">
+             <path fill="currentColor" fillOpacity="1" d="M0,224L48,213.3C96,203,192,181,288,181.3C384,181,480,203,576,224C672,245,768,267,864,261.3C960,256,1056,224,1152,197.3C1248,171,1344,149,1392,138.7L1440,128L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
+          </svg>
+          <svg viewBox="0 0 1440 320" className="absolute bottom-0 w-full h-full text-green-500/30" preserveAspectRatio="none" style={{ transform: 'scaleX(-1)' }}>
+             <path fill="currentColor" fillOpacity="1" d="M0,192L48,208C96,224,192,256,288,245.3C384,235,480,181,576,170.7C672,160,768,192,864,208C960,224,1056,224,1152,202.7C1248,181,1344,139,1392,117.3L1440,96L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
+          </svg>
+       </div>
+    </>
+  );
+};
+
+// Mini Countdown Component
+const MiniCountdown = () => {
+   return (
+      <div className="absolute top-6 right-6 z-50 pointer-events-none">
+         <motion.div 
+            initial={{ y: -50, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 1, type: "spring" }}
+            className="bg-white/80 backdrop-blur-sm px-4 py-2 rounded-2xl shadow-lg border-2 border-usagi-orange/50 transform rotate-3"
+         >
+            <span className="font-hand text-xl text-usagi-text font-bold">
+               距离生日还有 <span className="text-2xl text-usagi-orange">0</span> 天✨
+            </span>
+         </motion.div>
+      </div>
+   );
+};
+
+// Back Button
+const BackButton = ({ onClick, disabled = false }: { onClick: () => void, disabled?: boolean }) => {
+  const [isAnimating, setIsAnimating] = useState(false);
+
+  const handleClick = (e: React.MouseEvent) => {
+    if (e && e.stopPropagation) e.stopPropagation();
+    if (disabled || isAnimating) return;
+    setIsAnimating(true);
+    setTimeout(() => {
+       onClick();
+       setTimeout(() => setIsAnimating(false), 200);
+    }, 600);
+  };
+
+  return (
+    <motion.div 
+      className="fixed top-0 left-6 z-[60] flex flex-col items-center"
+      initial={{ y: -200, opacity: 0 }} 
+      animate={{ 
+         y: disabled ? -200 : 0, 
+         opacity: disabled ? 0 : 1,
+         pointerEvents: disabled ? 'none' : 'auto'
+      }} 
+      transition={{ duration: 0.8, type: "spring", stiffness: 60 }}
+    >
+      <div className="w-[1.5px] h-10 bg-[#8D6E63]/60 shadow-sm relative z-0 origin-top"></div>
+      <motion.div
+         className="cursor-pointer relative z-10 -mt-1 origin-top"
+         onClick={handleClick}
+         whileHover={{ rotate: [0, -5, 5, 0], transition: { repeat: Infinity, duration: 3, ease: "easeInOut" } }}
+         animate={isAnimating ? { y: [0, 60, 0] } : { y: 0 }}
+         transition={isAnimating ? { duration: 0.6, times: [0, 0.4, 1], ease: "easeInOut" } : {}}
+      >
+         <img src="https://test.fukit.cn/autoupload/f/IeSYb0Mnf1Z62nIKYGB4NyfNcKcqEnRmcljopnyJoMs/20251214/bzad/2768X2688/back.png/webp" alt="Back" className="w-20 md:w-24 object-contain filter drop-shadow-lg hover:brightness-105 transition-all" draggable={false} />
+      </motion.div>
+    </motion.div>
+  );
+};
+
+// SceneVinylPlayer (Full Page Immersive)
+const SceneVinylPlayer = ({ onBack }: { onBack: () => void }) => {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [volume, setVolume] = useState(0.5);
+  const [progress, setProgress] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
+  
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const requestRef = useRef<any>(null);
+
+  // Audio Initialization
+  useEffect(() => {
+    const audio = new Audio(VINYL_SONG_URL);
+    audio.loop = true;
+    audio.volume = volume;
+    audioRef.current = audio;
+    
+    const updateProgress = () => {
+       if (audio.duration) {
+          setCurrentTime(audio.currentTime);
+          setDuration(audio.duration);
+          setProgress((audio.currentTime / audio.duration) * 100);
+       }
+    };
+
+    audio.addEventListener('timeupdate', updateProgress);
+    audio.addEventListener('loadedmetadata', () => setDuration(audio.duration));
+    audio.addEventListener('error', (e) => console.error("Vinyl Player Audio Error:", e));
+    
+    audio.play()
+      .then(() => setIsPlaying(true))
+      .catch((e) => {
+        console.warn("Vinyl Player Autoplay blocked/failed", e);
+        setIsPlaying(false);
+      });
+
+    return () => {
+       audio.pause();
+       audio.removeEventListener('timeupdate', updateProgress);
+       cancelAnimationFrame(requestRef.current);
+    };
+  }, []);
+
+  const togglePlay = () => {
+     if(!audioRef.current) return;
+     if(isPlaying) audioRef.current.pause();
+     else audioRef.current.play();
+     setIsPlaying(!isPlaying);
+  };
+
+  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+     const v = parseFloat(e.target.value);
+     setVolume(v);
+     if(audioRef.current) audioRef.current.volume = v;
+  };
+
+  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
+     const val = parseFloat(e.target.value);
+     setProgress(val);
+     if(audioRef.current && duration) {
+        audioRef.current.currentTime = (val / 100) * duration;
+     }
+  };
+
+  const fmtTime = (t: number) => {
+     if(!t) return "0:00";
+     const m = Math.floor(t / 60);
+     const s = Math.floor(t % 60).toString().padStart(2, '0');
+     return `${m}:${s}`;
+  };
+
+  // Visualizer Animation
+  const animate = () => {
+    if (!canvasRef.current) return;
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    const width = canvas.width;
+    const height = canvas.height;
+    const centerX = width / 2;
+    const centerY = height / 2;
+    
+    // Config matches the video reference: radiating bars around the vinyl
+    // The vinyl div is about 56% of container (max 600px).
+    const vinylRadius = Math.min(width, height) * 0.28; 
+    
+    const barCount = 140;
+    const maxBarHeight = 100;
+    
+    ctx.clearRect(0, 0, width, height);
+    const time = Date.now() / 1000;
+
+    for (let i = 0; i < barCount; i++) {
+       // Start from bottom -90deg (or 270deg)
+       const angle = (i / barCount) * Math.PI * 2;
+       
+       let value = 0;
+       if (isPlaying) {
+          // Simulation of audio data - Fountain Effect
+          // Create "waves" of peaks that travel around
+          const wave = Math.sin(angle * 8 + time * 3); 
+          const breathing = Math.sin(time * 2) * 0.2 + 0.8;
+          
+          // Sharp beats
+          const beat = Math.pow(Math.sin(time * 4), 10) * 0.8;
+          
+          // Noise
+          const noise = Math.random() * 0.2;
+          
+          // Combine: The 'wave' creates the fountain peaks, beat adds pulsing
+          value = Math.abs(wave * breathing) * 0.6 + beat * 0.3 + noise;
+          
+          // Dampen value slightly for smoother look
+          value *= 0.8;
+       } else {
+          value = 0.02; // Tiny movement when paused
+       }
+       
+       const h = 5 + value * maxBarHeight;
+       
+       // Start drawing just outside the vinyl edge
+       const r1 = vinylRadius + 10; 
+       const r2 = r1 + h;
+
+       const x1 = centerX + Math.cos(angle) * r1;
+       const y1 = centerY + Math.sin(angle) * r1;
+       const x2 = centerX + Math.cos(angle) * r2;
+       const y2 = centerY + Math.sin(angle) * r2;
+
+       ctx.beginPath();
+       ctx.moveTo(x1, y1);
+       ctx.lineTo(x2, y2);
+       
+       // Golden gradient color from reference
+       const gradient = ctx.createLinearGradient(x1, y1, x2, y2);
+       gradient.addColorStop(0, 'rgba(197, 160, 89, 0.9)'); // Bright Inner gold
+       gradient.addColorStop(1, 'rgba(197, 160, 89, 0.0)'); // Outer fade
+
+       ctx.strokeStyle = gradient; 
+       ctx.lineWidth = 3;
+       ctx.lineCap = 'round';
+       ctx.stroke();
+    }
+
+    requestRef.current = requestAnimationFrame(animate);
+  };
+
+  useEffect(() => {
+     requestRef.current = requestAnimationFrame(animate);
+     return () => cancelAnimationFrame(requestRef.current);
+  }, [isPlaying]);
+
+  useEffect(() => {
+     const resize = () => {
+        if(canvasRef.current && canvasRef.current.parentElement) {
+           canvasRef.current.width = canvasRef.current.parentElement.offsetWidth;
+           canvasRef.current.height = canvasRef.current.parentElement.offsetHeight;
+        }
+     };
+     window.addEventListener('resize', resize);
+     resize();
+     return () => window.removeEventListener('resize', resize);
+  }, []);
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      // Deep Coffee/Black Vignette Background
+      className="fixed inset-0 z-[60] bg-[radial-gradient(circle_at_center,_#4a3b2a_0%,_#2c241b_50%,_#0f0c0a_100%)] flex flex-col items-center justify-center overflow-hidden text-[#E8DCC5] font-serif"
+    >
+       <button onClick={onBack} className="absolute top-6 left-6 z-50 p-3 rounded-full bg-white/5 hover:bg-white/10 transition-colors border border-white/5 text-[#E8DCC5]">
+          <ChevronLeft size={24} />
+       </button>
+
+       {/* Main Player Area - Centered Immersive */}
+       <div className="relative w-full h-full flex flex-col items-center justify-center p-8">
+          
+          {/* Top Metadata - Elegant Serif */}
+          <div className="absolute top-[10%] md:top-[12%] text-center z-20 space-y-3">
+             <h2 className="text-2xl md:text-4xl font-bold tracking-[0.2em] text-[#C5A059] uppercase font-serif drop-shadow-md">红色高跟鞋</h2>
+             <div className="flex items-center justify-center gap-4">
+                <div className="h-[1px] w-8 bg-[#C5A059]/40"></div>
+                <p className="text-xs md:text-sm text-[#E8DCC5]/60 tracking-[0.4em] font-sans uppercase">蔡健雅</p>
+                <div className="h-[1px] w-8 bg-[#C5A059]/40"></div>
+             </div>
+             <p className="text-[9px] text-[#C5A059]/40 tracking-[0.2em] pt-1">PLAYBACK ACTIVE</p>
+          </div>
+
+          {/* Vinyl Container */}
+          <div className="relative w-full max-w-[600px] aspect-square flex items-center justify-center">
+             {/* Visualizer Canvas - Behind Vinyl */}
+             <canvas ref={canvasRef} className="absolute inset-0 z-0 opacity-80" />
+
+             {/* The Record - Rotation controlled via CSS Animation for better Pause/Resume */}
+             <div 
+                className="w-[56%] h-[56%] rounded-full shadow-[0_30px_60px_rgba(0,0,0,0.9)] relative z-10 border border-[#1a1a1a]"
+                style={{ 
+                   background: 'radial-gradient(circle at 30% 30%, #222, #050505 60%)',
+                   animation: 'spin 8s linear infinite',
+                   animationPlayState: isPlaying ? 'running' : 'paused'
+                }}
+             >
+                {/* Grooves Texture */}
+                <div className="absolute inset-[2%] rounded-full opacity-40" style={{background: 'repeating-radial-gradient(#000 0, #000 2px, #222 3px, #222 4px)'}}></div>
+                
+                {/* Glossy Reflection Overlay */}
+                <div className="absolute inset-0 rounded-full vinyl-shine opacity-15 pointer-events-none"></div>
+                
+                {/* Center Label */}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[38%] h-[38%] rounded-full bg-[#1a1510] border-[3px] border-[#0a0806] flex items-center justify-center shadow-inner overflow-hidden">
+                   {/* Label Texture */}
+                   <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'url("https://www.transparenttextures.com/patterns/stardust.png")' }}></div>
+                   
+                   <div className="absolute inset-0 rounded-full border border-[#C5A059]/20 m-1"></div>
+                   <div className="absolute inset-0 rounded-full border border-[#C5A059]/10 m-2"></div>
+                   
+                   <div className="text-center transform scale-90 relative z-10">
+                      <div className="text-[5px] text-[#E8DCC5]/40 tracking-[0.2em] mb-1 font-sans">STEREO SOUND</div>
+                      <div className="text-[7px] text-[#C5A059] tracking-widest uppercase mb-1 font-bold border-b border-[#C5A059]/30 pb-0.5 mx-auto w-fit">High Fidelity</div>
+                      <div className="text-[6px] text-[#E8DCC5]/60 tracking-wider font-serif italic">Premium Vinyl</div>
+                      <div className="text-[8px] text-[#C5A059] font-bold mt-1 font-serif">33 ⅓</div>
+                   </div>
+                   
+                   {/* Spindle Hole */}
+                   <div className="absolute w-2 h-2 bg-[#000] rounded-full shadow-[inset_0_1px_1px_rgba(255,255,255,0.2)] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"></div>
+                </div>
+             </div>
+
+             {/* Tonearm - Minimalist Dark Aesthetic */}
+             <motion.div 
+                className="absolute top-[5%] right-[10%] w-[100px] h-[300px] z-20 pointer-events-none origin-[25px_25px]"
+                animate={{ rotate: isPlaying ? 25 : 0 }}
+                initial={{ rotate: 0 }}
+                transition={{ duration: 1.5, ease: "easeInOut" }}
+             >
+                 {/* Pivot Base */}
+                 <div className="absolute top-0 right-0 w-20 h-20 rounded-full bg-gradient-to-br from-[#2a2a2a] to-[#000] shadow-[0_10px_20px_rgba(0,0,0,0.6)] border border-[#333] flex items-center justify-center">
+                    <div className="w-12 h-12 rounded-full bg-[#111] shadow-[inset_0_2px_5px_rgba(0,0,0,0.5)] border border-[#222]"></div>
+                 </div>
+                 {/* Arm Shaft */}
+                 <div className="absolute top-10 right-10 w-3 h-60 bg-[#1a1a1a] rounded-full origin-top transform rotate-[18deg] shadow-lg flex items-end justify-center overflow-hidden border-l border-[#333]">
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#333] to-transparent opacity-30"></div>
+                 </div>
+                 {/* Head shell */}
+                 <div className="absolute bottom-[30px] right-[75px] w-12 h-16 bg-[#111] rounded-md transform rotate-[35deg] shadow-xl border-t border-[#333]">
+                    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4 h-6 bg-[#C5A059] rounded-b-sm opacity-80"></div>
+                 </div>
+             </motion.div>
+          </div>
+          
+          {/* Progress Bar Container - Positioned below vinyl */}
+          <div className="absolute bottom-[20%] z-30 w-full max-w-[400px] px-8 flex items-center gap-4">
+              <span className="text-[10px] font-mono text-[#C5A059] tabular-nums tracking-widest">{fmtTime(currentTime)}</span>
+              <div className="flex-1 relative h-6 flex items-center group">
+                  {/* Track Background */}
+                  <div className="absolute w-full h-[2px] bg-[#333] rounded-full overflow-hidden">
+                      {/* Active Progress */}
+                      <div className="h-full bg-[#C5A059] opacity-80" style={{ width: `${progress}%` }}></div>
+                  </div>
+                  {/* Input Range */}
+                  <input 
+                    type="range" 
+                    min="0" max="100" 
+                    value={progress}
+                    onChange={handleSeek}
+                    className="absolute w-full h-full opacity-0 cursor-pointer z-10"
+                  />
+                  {/* Thumb Indicator */}
+                  <div 
+                    className="absolute h-3 w-3 bg-[#C5A059] rounded-full shadow-[0_0_10px_rgba(197,160,89,0.8)] pointer-events-none transition-transform duration-100 ease-out group-hover:scale-125"
+                    style={{ left: `${progress}%`, transform: `translateX(-50%)` }}
+                  ></div>
+              </div>
+              <span className="text-[10px] font-mono text-[#C5A059] tabular-nums tracking-widest">{fmtTime(duration)}</span>
+          </div>
+
+          {/* Controls Bar - Floating Capsule - Matches Reference */}
+          <div className="absolute bottom-[8%] z-30 flex items-center gap-5 bg-[#0f0c0a]/90 backdrop-blur-xl px-6 py-3 rounded-full border border-[#C5A059]/10 shadow-[0_15px_40px_rgba(0,0,0,0.6)]">
+              {/* Play/Pause Group */}
+              <div className="flex items-center gap-4">
+                 <button className="text-[#C5A059]/60 hover:text-[#C5A059] transition-colors"><SkipBack size={16} fill="currentColor" /></button>
+                 <button onClick={togglePlay} className="w-8 h-8 rounded-full border border-[#C5A059]/30 text-[#C5A059] flex items-center justify-center hover:bg-[#C5A059]/10 transition-colors">
+                    {isPlaying ? <Pause size={14} fill="currentColor" /> : <Play size={14} fill="currentColor" className="ml-0.5" />}
+                 </button>
+                 <button className="text-[#C5A059]/60 hover:text-[#C5A059] transition-colors"><SkipForward size={16} fill="currentColor" /></button>
+              </div>
+
+              <div className="h-6 w-[1px] bg-[#C5A059]/10"></div>
+              
+              {/* Volume Group */}
+              <div className="flex items-center gap-2 w-24">
+                  <Volume2 size={12} className="text-[#C5A059]/60" />
+                  <input 
+                    type="range" 
+                    min="0" max="1" 
+                    step="0.01" 
+                    value={volume} 
+                    onChange={handleVolumeChange} 
+                    className="flex-1 h-0.5 bg-[#333] rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-2.5 [&::-webkit-slider-thumb]:h-2.5 [&::-webkit-slider-thumb]:bg-[#C5A059] [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-[0_0_5px_rgba(197,160,89,0.5)]" 
+                  />
+              </div>
+          </div>
+       </div>
+    </motion.div>
+  );
+};
+
+// SCENE 0: LOGIN
+const Scene0Login = ({ onLogin }: { onLogin: () => void }) => {
+  const [showPassword, setShowPassword] = useState(false);
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [shake, setShake] = useState(false);
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (username === 'xiaoma' && password === '1227') {
+      setError('');
+      onLogin();
+    } else {
+      setError('账号或密码错误，请重试');
+      setShake(true);
+      setTimeout(() => setShake(false), 500);
+    }
+  };
+
+  return (
+    <motion.div 
+      className="fixed inset-0 z-50 flex items-center justify-center bg-cover bg-center overflow-hidden"
+      style={{ backgroundImage: `url(${ASSETS.loginBackground})` }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0, scale: 1.1 }}
+      transition={{ duration: 0.8 }}
+    >
+      <div className="absolute inset-0 bg-black/20 backdrop-blur-[1px]"></div>
+
+      <motion.div 
+        className="glass-card w-[90%] max-w-[400px] rounded-2xl p-8 relative z-10 flex flex-col items-center"
+        initial={{ y: 50, opacity: 0 }}
+        animate={shake ? { x: [-10, 10, -10, 10, 0] } : { y: 0, opacity: 1 }}
+        transition={shake ? { duration: 0.4 } : { delay: 0.2, type: "spring", stiffness: 50 }}
+      >
+        <h2 className="text-3xl font-bold text-white mb-2 tracking-wide drop-shadow-md">欢迎回来</h2>
+        <p className="text-white/80 text-sm mb-6">请登录您的账户</p>
+
+        <form onSubmit={handleLogin} className="w-full space-y-4">
+          <div className="relative group">
+            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 transition-colors group-focus-within:text-usagi-orange">
+              <User size={20} />
+            </div>
+            <input 
+              type="text" 
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="小主，请赐个用户名" 
+              className="w-full py-3.5 pl-12 pr-4 rounded-2xl bg-white/80 border-none outline-none focus:bg-white focus:ring-2 focus:ring-usagi-orange/50 transition-all placeholder:text-gray-500 text-gray-700"
+            />
+          </div>
+
+          <div className="relative group">
+            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 transition-colors group-focus-within:text-usagi-orange">
+              <Lock size={20} />
+            </div>
+            <input 
+              type={showPassword ? "text" : "password"} 
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="小主的通关密令" 
+              className="w-full py-3.5 pl-12 pr-12 rounded-2xl bg-white/80 border-none outline-none focus:bg-white focus:ring-2 focus:ring-usagi-orange/50 transition-all placeholder:text-gray-500 text-gray-700"
+            />
+            <button 
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
+            >
+              {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+            </button>
+          </div>
+
+          {error && (
+            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="text-red-200 bg-red-500/30 px-3 py-1 rounded-2xl text-xs text-center font-bold">
+              {error}
+            </motion.div>
+          )}
+
+          <div className="flex justify-between items-center text-xs text-white/90 px-1">
+            <label className="flex items-center gap-2 cursor-pointer hover:text-white transition-colors">
+              <input type="checkbox" className="w-4 h-4 rounded border-gray-300 text-usagi-orange focus:ring-usagi-orange" />
+              <span>记住我</span>
+            </label>
+            <button type="button" className="hover:underline hover:text-white transition-colors">忘记密码?</button>
+          </div>
+
+          <button 
+            type="submit"
+            className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-[#8A7CFB] to-[#635BFF] text-white font-bold text-lg shadow-lg hover:shadow-xl hover:opacity-90 active:scale-[0.98] transition-all mt-4"
+          >
+            小主请进
+          </button>
+        </form>
+
+        <div className="w-full flex items-center gap-4 my-6 text-white/60 text-xs">
+          <div className="h-px bg-white/30 flex-1"></div>
+          <span>或者</span>
+          <div className="h-px bg-white/30 flex-1"></div>
+        </div>
+
+        <div className="w-full space-y-3">
+          <button className="w-full py-2.5 rounded-2xl bg-white/90 hover:bg-white text-[#07C160] font-bold border border-[#07C160]/20 flex items-center justify-center gap-2 transition-all shadow-sm">
+            <MessageCircle size={20} fill="currentColor" className="text-[#07C160]" />
+            <span>使用微信登录</span>
+          </button>
+          <button className="w-full py-2.5 rounded-2xl bg-white/90 hover:bg-white text-[#0099FF] font-bold border border-[#0099FF]/20 flex items-center justify-center gap-2 transition-all shadow-sm">
+            <Bell size={20} fill="currentColor" className="text-[#0099FF]" />
+            <span>使用QQ登录</span>
+          </button>
+        </div>
+
+        <div className="mt-8 text-xs text-white/80">
+          还没有账户? <button className="text-blue-200 font-bold hover:underline ml-1">立即注册</button>
+        </div>
+
+      </motion.div>
+    </motion.div>
+  );
+};
+
+// Usagi Character Component
+const UsagiCharacter = ({ action, className, onClick, boardText, imageSrc }: any) => {
+  const variants = {
+    idle: { y: [0, -5, 0], transition: { repeat: Infinity, duration: 2 } },
+    jump: { y: [0, -50, 0], scale: [1, 1.1, 0.9, 1], transition: { repeat: Infinity, duration: 0.6 } },
+    wave: { rotate: [0, 10, -10, 0], transition: { repeat: Infinity, duration: 1 } },
+    camera: { scale: [1, 1.05, 1], transition: { duration: 0.3 } },
+    cheer: { y: [0, -20, 0], transition: { repeat: Infinity, duration: 0.4 } },
+    shhh: { scale: 1 },
+    'hold-board': { y: [0, -3, 0], transition: { repeat: Infinity, duration: 3 } },
+    heart: { scale: [1, 1.1, 1], transition: { duration: 0.5, repeat: Infinity, repeatDelay: 1 } }
+  };
+
+  return (
+    <motion.div 
+      className={`relative cursor-pointer select-none ${className}`}
+      onClick={onClick}
+      animate={action}
+      variants={variants}
+      whileHover={{ scale: 1.05 }}
+      whileTap={{ scale: 0.95 }}
+    >
+      <img 
+        src={imageSrc || "https://test.fukit.cn/autoupload/f/IeSYb0Mnf1Z62nIKYGB4NyfNcKcqEnRmcljopnyJoMs/20251214/P3yB/4272X4300/mai.png/webp"} 
+        alt="Character" 
+        className="w-full h-full object-contain drop-shadow-lg pointer-events-none"
+        draggable={false}
+      />
+      
+      {action === 'heart' && (
+          <motion.div 
+            className="absolute -top-4 -right-4 text-4xl filter drop-shadow-md"
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: [1, 1.2, 1], opacity: 1 }}
+            transition={{ duration: 0.8, repeat: Infinity }}
+          >
+            ❤️
+          </motion.div>
+      )}
+
+      {action === 'camera' && (
+          <motion.div 
+            className="absolute bottom-0 right-0 text-3xl filter drop-shadow-md"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+          >
+            📷
+          </motion.div>
+      )}
+      
+      {action === 'hold-board' && (
+         <div className="absolute top-[55%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-[110%] h-[40%] max-w-[300px]">
+            <div className="w-full h-full bg-white border-4 border-dashed border-usagi-orange rounded-xl flex items-center justify-center p-3 shadow-lg transform -rotate-2 relative z-10">
+                <div className="text-sm md:text-xl text-center font-hand text-usagi-text leading-tight break-words w-full h-full flex items-center justify-center">
+                    {boardText || "Happy Birthday!"}
+                </div>
+            </div>
+         </div>
+      )}
+    </motion.div>
+  );
+};
+
+// Background Component
+const Background = () => {
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => setMousePosition({ x: e.clientX, y: e.clientY });
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, []);
+  return (
+    <div className="fixed inset-0 z-0 overflow-hidden bg-gradient-to-b from-[#FFF9E6] to-[#F9D59B] pointer-events-none">
+      <motion.div initial={{ x: -100 }} animate={{ x: '100vw' }} transition={{ duration: 35, repeat: Infinity, ease: 'linear' }} className="absolute top-10 left-0 text-white opacity-60 text-9xl blur-sm">☁️</motion.div>
+      {Array.from({ length: 20 }).map((_, i) => (
+        <motion.div key={i} className="absolute rounded-full bg-[#FBBF77] shadow-[0_0_10px_#FBBF77]"
+          style={{ width: Math.random() * 8 + 4, height: Math.random() * 8 + 4, top: `${Math.random() * 100}%`, left: `${Math.random() * 100}%`, x: (mousePosition.x * 0.02 * (i % 2 === 0 ? 1 : -1)), y: (mousePosition.y * 0.02 * (i % 2 === 0 ? 1 : -1)) }}
+          animate={{ opacity: [0.4, 1, 0.4], scale: [1, 1.2, 1] }} transition={{ duration: 1, repeat: Infinity, delay: Math.random() * 2 }}
+        />
+      ))}
+    </div>
+  );
+};
+
+// Atmosphere Particles
+const AtmosphereParticles = () => {
+  const particles = useMemo(() => Array.from({ length: 15 }).map((_, i) => ({
+    id: i,
+    x: Math.random() * 100,
+    y: Math.random() * 100,
+    size: Math.random() * 10 + 5,
+    color: ['#FFCdd2', '#FFF9C4', '#B2DFDB'][Math.floor(Math.random() * 3)],
+    duration: Math.random() * 10 + 10,
+    delay: Math.random() * 5
+  })), []);
+
+  return (
+    <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
+      {particles.map((p) => (
+        <motion.div
+          key={p.id}
+          className="absolute rounded-full opacity-30"
+          style={{
+            left: `${p.x}%`,
+            top: -20,
+            width: p.size,
+            height: p.size,
+            backgroundColor: p.color,
+            boxShadow: `0 0 10px ${p.color}`
+          }}
+          animate={{
+            y: ['0vh', '100vh'],
+            x: [0, Math.random() * 50 - 25],
+            rotate: [0, 360]
+          }}
+          transition={{
+            duration: p.duration,
+            repeat: Infinity,
+            ease: "linear",
+            delay: p.delay
+          }}
+        />
+      ))}
+    </div>
+  );
+};
+
+// SCENE 1: Intro (UPDATED WITH BALLOON PHYSICS & BUTTON STYLE)
+const Scene1Intro = ({ onStart }: { onStart: () => void }) => {
+  const BALLOON_TEXTS = ["这是一个有着香气的晚上~", "要开心！", "暴富暴富✨", "天天好心情", "吃不胖！", "永远美少女", "平安喜乐", "好运连连"];
+  
+  // Define specific colors for balloons based on index/assumed image content
+  // 0: Pink/Red, 1: Blue/Teal, 2: Yellow/Orange
+  const BALLOON_COLORS = [
+     { shadow: 'rgba(255, 182, 193, 0.4)', filter: 'drop-shadow(0 15px 10px rgba(255, 105, 180, 0.2))' }, 
+     { shadow: 'rgba(173, 216, 230, 0.4)', filter: 'drop-shadow(0 15px 10px rgba(70, 130, 180, 0.2))' }, 
+     { shadow: 'rgba(255, 222, 173, 0.4)', filter: 'drop-shadow(0 15px 10px rgba(255, 165, 0, 0.2))' }
+  ];
+
+  const balloons = useMemo(() => {
+    return Array.from({ length: 15 }).map((_, i) => {
+      const scale = Math.random() * 0.4 + 0.8;
+      const speed = Math.random() * 10 + 15;
+      const sway = Math.random() * 50 + 30; // Amplitude
+      const swayTime = Math.random() * 4 + 4; // Duration of one sway cycle
+      
+      return {
+        id: i,
+        src: ASSETS.balloons[i % ASSETS.balloons.length],
+        colorConfig: BALLOON_COLORS[i % BALLOON_COLORS.length],
+        left: Math.random() * 90 + 5,
+        scale: scale,
+        duration: speed,
+        delay: Math.random() * 12,
+        swayAmount: sway,
+        swayDuration: swayTime,
+        rotateAmount: Math.random() * 10 + 5
+      };
+    });
+  }, []);
+
+  // Interactive Balloon Sub-component with Enhanced Physics & Shadows
+  const InteractiveBalloon = ({ config }: any) => {
+    const [isClicked, setIsClicked] = useState(false);
+    const [message, setMessage] = useState<string | null>(null);
+
+    const handleClick = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      setIsClicked(true);
+      setMessage(BALLOON_TEXTS[Math.floor(Math.random() * BALLOON_TEXTS.length)]);
+      
+      setTimeout(() => setIsClicked(false), 300);
+      setTimeout(() => setMessage(null), 1500);
+    };
+
+    return (
+      <motion.div
+        className="absolute"
+        style={{ left: `${config.left}%`, bottom: '-150px', zIndex: 15 }}
+        animate={{ 
+          y: -window.innerHeight - 300,
+          x: [0, config.swayAmount, -config.swayAmount/2, config.swayAmount/2, 0] // Natural wandering path
+        }}
+        transition={{ 
+          y: { duration: config.duration, ease: "linear", repeat: Infinity, delay: config.delay }, 
+          x: { duration: config.swayDuration, ease: "easeInOut", repeat: Infinity, repeatType: "mirror" }
+        }}
+      >
+        <motion.div
+          onClick={handleClick}
+          // Simulate "bouncing off clouds" turbulence at the top (simple random x offset)
+          style={{ filter: config.colorConfig.filter }}
+          animate={isClicked ? { scale: 1.2, rotate: [0, -10, 10, 0] } : { 
+            scale: config.scale, 
+            rotate: [0, config.rotateAmount, 0, -config.rotateAmount, 0],
+            y: [0, -15, 0], // Internal bobbing for extra floatiness
+            x: [0, Math.random() * 10 - 5, 0] // Subtle turbulence
+          }}
+          transition={isClicked ? { duration: 0.3 } : { 
+            rotate: { duration: config.swayDuration - 1, ease: "easeInOut", repeat: Infinity },
+            y: { duration: 3, ease: "easeInOut", repeat: Infinity },
+            x: { duration: 5, ease: "easeInOut", repeat: Infinity, delay: Math.random() * 5 }
+          }}
+          className="relative cursor-pointer select-none"
+          whileHover={{ scale: 1.1 }}
+        >
+          <img src={config.src} className="w-[100px] object-contain opacity-90" alt="balloon" draggable={false}/>
+          
+          {/* Colored Shadow Trail / Glow */}
+          <div 
+             className="absolute bottom-2 left-1/2 -translate-x-1/2 w-3/4 h-4 rounded-full blur-md opacity-40 pointer-events-none"
+             style={{ background: config.colorConfig.shadow }}
+          ></div>
+
+          <AnimatePresence>
+            {message && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0, y: 10 }}
+                animate={{ opacity: 1, scale: 1, y: -50 }}
+                exit={{ opacity: 0, scale: 0.5, y: -70 }}
+                transition={{ duration: 0.3 }}
+                className="absolute left-1/2 -translate-x-1/2 top-0 bg-white/95 px-3 py-1.5 rounded-xl text-usagi-text text-sm font-bold shadow-lg border-2 border-usagi-pink/50 whitespace-nowrap z-50 pointer-events-none"
+              >
+                {message}
+                <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-white/95 rotate-45 border-b-2 border-r-2 border-usagi-pink/50"></div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
+      </motion.div>
+    );
+  };
+
+  return (
+    <motion.div className="relative w-full h-screen flex flex-col items-center justify-center z-10 overflow-hidden" exit={{ opacity: 0, x: -50 }}>
+      {/* Dynamic Light Background */}
+      <LightOverlay />
+      
+      {/* Scene Decorations */}
+      <SceneDecorations />
+      
+      {/* Countdown */}
+      <MiniCountdown />
+
+      {balloons.map((b) => (
+        <InteractiveBalloon key={b.id} config={b} />
+      ))}
+      
+      <motion.div initial={{ x: -window.innerWidth, y: 100 }} animate={{ x: 0, y: 0 }} transition={{ type: "spring", stiffness: 60, damping: 15 }} className="mb-8 relative z-20 cursor-pointer" whileHover={{ scale: 1.05 }} onClick={onStart}>
+        <motion.div className="absolute inset-0 bg-usagi-main/30 rounded-full blur-xl" animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0.8, 0.5] }} transition={{ duration: 2, repeat: Infinity }} />
+        <UsagiCharacter action="jump" className="w-56 h-56 md:w-72 md:h-72 relative z-10" />
+      </motion.div>
+      
+      {/* Start Button - Soft Candy Style */}
+      <motion.button 
+        initial={{ opacity: 0, y: 20 }} 
+        animate={{ opacity: 1, y: 0 }} 
+        transition={{ delay: 0.8 }} 
+        whileHover="hover"
+        whileTap={{ scale: 0.95 }} 
+        onClick={onStart}
+        className="group relative z-20 bg-gradient-to-r from-[#FFB74D] to-[#FF8A65] hover:brightness-110 text-white font-bold py-3 px-12 rounded-[20px] shadow-[0_8px_20px_rgba(255,183,77,0.4)] border-2 border-white/40 transition-all overflow-hidden"
+      >
+        <motion.div 
+          variants={{ hover: { scale: 1.05 } }}
+          transition={{ type: "spring", stiffness: 400 }}
+          className="relative z-10 text-xl font-hand flex items-center gap-2"
+        >
+          开启祝福 
+          <motion.span 
+            variants={{ hover: { rotate: 180, scale: 1.2 } }}
+            transition={{ duration: 0.4 }}
+            className="inline-block"
+          >
+            ✨
+          </motion.span>
+        </motion.div>
+        
+        {/* Gloss/Shine Effect */}
+        <div className="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-b from-white/30 to-transparent rounded-t-[20px] pointer-events-none"></div>
+      </motion.button>
+    </motion.div>
+  );
+};
+
+// SCENE 2: Photo Wall
+const Scene2PhotoWall = ({ isActive, onNext, showButton, isBackgroundMode }: any) => {
+  const [photosGathered, setPhotosGathered] = useState(false);
+  const [usagiAction, setUsagiAction] = useState('camera');
+  useEffect(() => {
+    if (isActive && !isBackgroundMode && !photosGathered) {
+      const timer = setTimeout(() => {
+        setPhotosGathered(true);
+        setUsagiAction('heart');
+        confetti({ particleCount: 150, spread: 120, origin: { y: 0.6 }, colors: ['#F9D59B', '#F8C8DC', '#FBBF77', '#FFFFFF'] });
+      }, PHOTOS.length * 1500 + 1000);
+      return () => clearTimeout(timer);
+    }
+    if (isActive && !isBackgroundMode && photosGathered) setUsagiAction('heart');
+  }, [isActive, isBackgroundMode, photosGathered]);
+
+  return (
+    <div className={`w-full h-full flex flex-col items-center justify-center p-4 transition-all duration-1000 ${isBackgroundMode ? 'brightness-50 opacity-40 grayscale-[0.2]' : ''}`}>
+      {!isBackgroundMode && isActive && (
+        <motion.h2 initial={{ y: -50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="text-3xl md:text-5xl font-hand text-usagi-text mb-6 z-10 drop-shadow-sm text-center">Our Beautiful Moments</motion.h2>
+      )}
+      <motion.div className="relative bg-white/60 backdrop-blur-sm border-[6px] border-[#FFF5E1] shadow-2xl grid grid-cols-3 gap-[3px]" style={{ width: '85%', height: '70%' }} initial={{ scale: 0.95 }} animate={photosGathered ? { scale: 1.05 } : { scale: 1 }}>
+        {PHOTOS.map((photo, index) => (
+          <motion.div key={photo.id} className="relative bg-white overflow-hidden border border-usagi-light w-full h-full"
+            initial={{ opacity: 0, x: index % 2 === 0 ? -600 : 600, y: index < 4 ? -400 : 400, rotate: (Math.random() - 0.5) * 10 }}
+            animate={{ opacity: 1, x: 0, y: 0, rotate: photosGathered ? 0 : photo.rotation }}
+            transition={{ delay: index * 1.5, duration: 2, type: "spring", stiffness: 40 }}>
+            <img src={photo.url} alt="Memory" className="w-full h-full object-cover" />
+          </motion.div>
+        ))}
+      </motion.div>
+      <motion.div className="fixed bottom-10 right-4 md:right-10 z-10 pointer-events-none" animate={isBackgroundMode ? { x: 300, opacity: 0 } : { x: 0, opacity: 1 }}>
+        <UsagiCharacter 
+          action={usagiAction} 
+          className="w-32 h-32 md:w-48 md:h-48" 
+          imageSrc={photosGathered ? 'https://test.fukit.cn/autoupload/f/IeSYb0Mnf1Z62nIKYGB4NyfNcKcqEnRmcljopnyJoMs/20251214/4l2h/4320X4664/camera.png/webp' : 'https://test.fukit.cn/autoupload/f/IeSYb0Mnf1Z62nIKYGB4NyfNcKcqEnRmcljopnyJoMs/20251214/aFhf/4568X4876/camera1.png/webp'}
+        />
+      </motion.div>
+      {showButton && photosGathered && !isBackgroundMode && (
+        <motion.button initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} whileHover={{ scale: 1.05, backgroundColor: "#FBBF77" }} onClick={onNext}
+          className="mt-8 z-20 bg-usagi-main text-usagi-text px-10 py-3 rounded-full font-bold shadow-lg border-2 border-white transition-colors flex items-center gap-2">
+          <span>查看专属祝福</span><span className="text-xl">💌</span>
+        </motion.button>
+      )}
+    </div>
+  );
+};
+
+// SCENE 3: Wishes
+const Scene3Wishes = ({ onGoToCakeInteraction, onGoToOutro, onGoToMusic, pauseBGM }: any) => {
+  const letterChars = BIRTHDAY_LETTER.split('');
+
+  const handleGiftClick = () => {
+    pauseBGM(); 
+    confetti({
+       particleCount: 150,
+       spread: 70,
+       origin: { y: 0.6 },
+       colors: ['#F9D59B', '#F8C8DC', '#FBBF77', '#FFFFFF']
+    });
+    onGoToMusic(); 
+  };
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: { 
+         delayChildren: 4.0, // Text appears 4s after scene start (1s decor + 1s wait + 1s card + 1s wait)
+         staggerChildren: 0.1 
+      } 
+    }
+  };
+
+  const charVariants = {
+    hidden: { opacity: 0, y: 5 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.1 } }
+  };
+
+  return (
+    <div className="relative min-h-screen w-full flex items-center justify-center p-4 md:p-8 overflow-hidden">
+      <AtmosphereParticles />
+
+      {/* Phase 1: Shengri (Appears Immediately t=0) */}
+      <motion.img 
+        src="https://test.fukit.cn/autoupload/f/IeSYb0Mnf1Z62nIKYGB4NyfNcKcqEnRmcljopnyJoMs/20251214/TGpb/4320X4992/shengri.png/webp" 
+        alt="Decoration" 
+        className="absolute bottom-4 right-4 w-32 md:w-56 z-10 pointer-events-none"
+        initial={{ opacity: 0 }} 
+        animate={{ opacity: 1, y: [0, -10, 0] }}
+        transition={{ 
+          opacity: { duration: 1.0 }, 
+          y: { repeat: Infinity, duration: 4, ease: "easeInOut" }
+        }}
+      />
+
+      <div className="relative z-20 w-full max-w-6xl grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
+        
+        <div className="relative w-full">
+            {/* Phase 1: Decorations (Appear Immediately t=0) */}
+            
+            {/* Sticker (Xingfu) */}
+            <motion.img 
+               src="https://test.fukit.cn/autoupload/f/IeSYb0Mnf1Z62nIKYGB4NyfNcKcqEnRmcljopnyJoMs/20251214/LCWH/5008X4320/xingfu.png/webp" 
+               alt="Happiness" 
+               className="absolute -top-6 -right-6 w-24 md:w-32 z-50 drop-shadow-md pointer-events-none origin-center"
+               style={{ transform: 'translate(1cm, -1cm) scale(1.5) rotate(12deg)' }}
+               initial={{ opacity: 0 }}
+               animate={{ opacity: 1 }}
+               transition={{ duration: 1.0 }}
+            />
+            
+            {/* Frame (Kuang) 
+                Moved down 1.5cm from previous position (1cm). New position: 2.5cm.
+            */}
+            <motion.img 
+               src="https://test.fukit.cn/autoupload/f/IeSYb0Mnf1Z62nIKYGB4NyfNcKcqEnRmcljopnyJoMs/20251214/JCAe/8000X5520/kuang.png/webp" 
+               alt="Frame" 
+               className="absolute -bottom-10 -left-12 w-[130%] max-w-none z-50 pointer-events-none"
+               style={{ transform: 'translate(-1cm, 2.5cm)' }}
+               initial={{ opacity: 0 }}
+               animate={{ opacity: 1 }}
+               transition={{ duration: 1.0 }}
+            />
+
+            {/* Phase 2: Card Container (Appears t=2s - after 1s decor + 1s wait) */}
+            <motion.div 
+              initial={{ x: -30, opacity: 0 }} 
+              animate={{ x: 0, opacity: 1 }} 
+              transition={{ delay: 2.0, duration: 1.0, ease: "easeOut" }}
+              className="w-full bg-gradient-to-b from-[#FFF9E6]/80 to-[#FFF9E6]/40 backdrop-blur-[5px] border border-white/40 shadow-soft p-8 md:p-12 rounded-2xl relative flex flex-col justify-between min-h-[420px]"
+            >
+              <div className="flex items-center gap-3 mb-8 relative z-10">
+                <motion.h2 
+                  className="text-[28px] md:text-3xl font-cute font-bold text-[#F06292] tracking-wide title-glow"
+                  animate={{ y: [0, -3, 0] }}
+                  transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                >
+                  祝{RECIPIENT_NAME}生日快乐！
+                </motion.h2>
+                <motion.div 
+                  className="w-12 h-12 -mt-2"
+                  animate={{ rotate: [0, 10, -10, 0] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                >
+                  <UsagiCharacter action="cheer" className="w-full h-full" />
+                </motion.div>
+              </div>
+
+              {/* Phase 3: Text (Appears t=4s+, controlled by containerVariants delayChildren) */}
+              <motion.div 
+                className="font-cute text-xl md:text-2xl text-[#5D4037] leading-[1.8] tracking-wide flex-grow relative z-10"
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+              >
+                {letterChars.map((char, i) => (
+                  <motion.span key={i} variants={charVariants}>
+                    {char}
+                  </motion.span>
+                ))}
+              </motion.div>
+
+              {/* Signature - Moved left 0.5cm (Previous was translate(-0.5cm, -1cm), so now translate(-1cm, -1cm)) */}
+              <div className="mt-8 flex justify-end relative z-10" style={{ transform: 'translate(-1cm, -1cm)' }}>
+                <span className="text-sm font-sans text-gray-500/80 tracking-widest uppercase">
+                  From {SENDER_NAME}
+                </span>
+              </div>
+            </motion.div>
+        </div>
+
+        <div className="flex flex-col items-center gap-8 relative">
+          
+          <motion.div 
+            className="relative cursor-pointer group" 
+            onClick={onGoToCakeInteraction} 
+            whileHover={{ y: -5, filter: "drop-shadow(0 10px 10px rgba(0,0,0,0.1))" }}
+            whileTap={{ scale: 0.95 }}
+            transition={{ type: "spring", stiffness: 300 }}
+          >
+            <div className="text-[8rem] md:text-[9rem] leading-none transition-transform group-hover:rotate-3">🎂</div>
+            <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-white/90 px-4 py-1.5 rounded-full text-xs font-bold text-usagi-text opacity-0 group-hover:opacity-100 transition-opacity shadow-sm whitespace-nowrap border border-usagi-orange/20">
+              点燃蜡烛 🕯️
+            </span>
+          </motion.div>
+
+          <motion.div 
+            className="relative cursor-pointer group" 
+            onClick={handleGiftClick} 
+            whileHover={{ y: -5, rotate: [0, -5, 5, 0], filter: "drop-shadow(0 10px 10px rgba(0,0,0,0.1))" }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <div className="text-7xl md:text-8xl filter brightness-105">🎁</div>
+            
+            <motion.div 
+               className="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none"
+               initial={{ y: 5 }}
+               whileHover={{ y: -5 }}
+            >
+               <div className="bg-white px-3 py-1 rounded-full shadow-lg border border-usagi-orange/30 text-usagi-text text-sm font-bold whitespace-nowrap flex items-center gap-1">
+                  点击拆礼物 <Sparkles size={12} className="text-yellow-500"/>
+               </div>
+               <div className="w-2 h-2 bg-white transform rotate-45 absolute -bottom-1 left-1/2 -translate-x-1/2 border-b border-r border-usagi-orange/30"></div>
+            </motion.div>
+          </motion.div>
+
+          <motion.button 
+            onClick={onGoToOutro} 
+            whileHover={{ scale: 1.05, boxShadow: "0 10px 20px rgba(251, 191, 119, 0.4)" }}
+            whileTap={{ scale: 0.95 }}
+            className="mt-4 bg-gradient-to-r from-[#FFB74D] to-[#FF8A65] text-white font-bold text-lg py-4 px-12 rounded-2xl shadow-soft border border-white/30 transition-all flex items-center gap-2 btn-text-stroke relative overflow-hidden group"
+          >
+            <span className="relative z-10">许个愿望</span>
+            <ArrowRight size={20} className="relative z-10" />
+            <div className="absolute inset-0 bg-white/20 scale-0 group-active:scale-150 transition-transform duration-300 rounded-full origin-center"></div>
+          </motion.button>
+
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// SCENE 4: Cake Interaction
+const Scene4CakeInteraction = () => {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
+  const particlesRef = useRef<THREE.Points | null>(null);
+  const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
+  const controlsRef = useRef<OrbitControls | null>(null);
+  const handsRef = useRef<any>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const cameraActive = useRef(false);
+  const analyserRef = useRef<any>(null);
+  const lastActionTime = useRef(0);
+  const blowTriggerCount = useRef(0);
+  const audioCheckRaf = useRef(0);
+
+  const [cakeState, setCakeState] = useState('SCATTERED');
+  const [cameraAuthorized, setCameraAuthorized] = useState(false);
+  const [cameraError, setCameraError] = useState<string | null>(null);
+  const [micActive, setMicActive] = useState(false);
+  const [feedback, setFeedback] = useState<any>(null);
+  const [detectedGesture, setDetectedGesture] = useState('Searching...');
+  const [handVisible, setHandVisible] = useState(false);
+  const [surpriseActive, setSurpriseActive] = useState(false);
+
+  const stateRef = useRef({ cakeState, surpriseActive });
+  useEffect(() => { stateRef.current = { cakeState, surpriseActive }; }, [cakeState, surpriseActive]);
+
+  const stopCamera = useCallback(() => {
+       cameraActive.current = false;
+       if (streamRef.current) {
+          streamRef.current.getTracks().forEach(track => {
+              try { track.stop(); } catch(e) {}
+          });
+          streamRef.current = null;
+       }
+       if (videoRef.current) {
+          videoRef.current.srcObject = null;
+       }
+       if (handsRef.current) {
+          try { handsRef.current.close(); } catch(e) {}
+          handsRef.current = null;
+       }
+  }, []);
+
+  const CONFIG = useMemo(() => ({
+    particleCount: 35000,
+    colors: { base: new THREE.Color('#F9D59B'), cream: new THREE.Color('#FFF8E1'), candle: new THREE.Color('#E0C097'), wick: new THREE.Color('#5D4037'), flameCore: new THREE.Color('#FFFFFF'), flameOuter: new THREE.Color('#FBBF77'), heart: new THREE.Color('#FF69B4'), heartGlow: new THREE.Color('#FFC0CB') },
+    thresholds: { pinchDist: 0.05, audioLevel: 45 } 
+  }), []);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
+    camera.position.set(0, 0, 14); camera.lookAt(0, 0, 0); cameraRef.current = camera;
+    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    containerRef.current.appendChild(renderer.domElement);
+    rendererRef.current = renderer;
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true; controls.dampingFactor = 0.05; controls.autoRotate = true; controls.autoRotateSpeed = 2.0; controls.enableZoom = false; controls.enablePan = false;
+    controlsRef.current = controls;
+
+    const positions = new Float32Array(CONFIG.particleCount * 3);
+    const targets = new Float32Array(CONFIG.particleCount * 3);
+    const heartTargets = new Float32Array(CONFIG.particleCount * 3);
+    const colors = new Float32Array(CONFIG.particleCount * 3);
+    const sizes = new Float32Array(CONFIG.particleCount);
+    const types = new Float32Array(CONFIG.particleCount);
+    const CAKE_SCALE = 1.5;
+
+    for (let i = 0; i < CONFIG.particleCount; i++) {
+      const i3 = i * 3;
+      const r = 25 * Math.cbrt(Math.random()); const theta = Math.random() * Math.PI * 2; const phi = Math.acos(2 * Math.random() - 1);
+      positions[i3] = r * Math.sin(phi) * Math.cos(theta); positions[i3 + 1] = r * Math.sin(phi) * Math.sin(theta); positions[i3 + 2] = r * Math.cos(phi);
+      
+      const rand = Math.random(); let color = new THREE.Color(); let type = 0; let size = Math.random() * 0.5 + 0.8; let tx = 0, ty = 0, tz = 0; const yOffset = -0.5;
+      if (rand < 0.65) {
+        const noise = (Math.random() - 0.5) * 0.1;
+        if (Math.random() > 0.4) { const rad = Math.sqrt(Math.random()) * 3.5; const ang = Math.random() * Math.PI * 2; const h = (Math.random() - 0.5) * 1.5; tx = Math.cos(ang) * rad; ty = h - 1.0; tz = Math.sin(ang) * rad; size = 1.5; }
+        else { const rad = Math.sqrt(Math.random()) * 2.2; const ang = Math.random() * Math.PI * 2; const h = (Math.random() - 0.5) * 1.2; tx = Math.cos(ang) * rad; ty = h + 0.5; tz = Math.sin(ang) * rad; size = 1.4; }
+        color = CONFIG.colors.base.clone().offsetHSL(0, 0, noise);
+      } else if (rand < 0.88) {
+        const rad = Math.sqrt(Math.random()) * 2.3; const ang = Math.random() * Math.PI * 2; let h = 0.5; if (Math.random() > 0.7) h -= Math.random() * 0.6; tx = Math.cos(ang) * rad; ty = h + 1.1; tz = Math.sin(ang) * rad; color = CONFIG.colors.cream; size = 1.6;
+      } else if (rand < 0.97) {
+        const rad = Math.random() * 0.15; const ang = Math.random() * Math.PI * 2; const h = Math.random() * 1.5; tx = Math.cos(ang) * rad; ty = h + 1.8; tz = Math.sin(ang) * rad; color = CONFIG.colors.candle; size = 1.2;
+      } else {
+        if (Math.random() > 0.3) { tx = 0; ty = 3.4 + Math.random() * 0.1; tz = 0; color = CONFIG.colors.wick; type = 1; }
+        else { const rad = Math.random() * 0.2; const ang = Math.random() * Math.PI * 2; const h = Math.random() * 0.5; const shape = (1 - h/0.5); tx = Math.cos(ang) * rad * shape; ty = 3.5 + h; tz = Math.sin(ang) * rad * shape; color = Math.random() > 0.5 ? CONFIG.colors.flameOuter : CONFIG.colors.flameCore; type = 2; size = 2.5; }
+      }
+      tx *= CAKE_SCALE; ty *= CAKE_SCALE; tz *= CAKE_SCALE; ty += yOffset;
+      targets[i3] = tx; targets[i3+1] = ty; targets[i3+2] = tz;
+      colors[i3] = color.r; colors[i3+1] = color.g; colors[i3+2] = color.b; sizes[i] = size; types[i] = type;
+
+      const t = Math.random() * Math.PI * 2;
+      let hx = 16 * Math.pow(Math.sin(t), 3); let hy = 13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t);
+      const scale = 0.65; hx *= scale; hy *= scale;
+      const thickness = 0.6; const randR = Math.random() * thickness; const randAng = Math.random() * Math.PI * 2;
+      hx += Math.cos(randAng) * randR; hy += Math.sin(randAng) * randR; const hz = Math.sin(randAng) * randR * 2.0;
+      heartTargets[i3] = hx; heartTargets[i3+1] = hy; heartTargets[i3+2] = hz;
+    }
+
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geometry.setAttribute('target', new THREE.BufferAttribute(targets, 3));
+    geometry.setAttribute('heartTarget', new THREE.BufferAttribute(heartTargets, 3));
+    geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+    geometry.setAttribute('aType', new THREE.BufferAttribute(types, 1));
+
+    const material = new THREE.ShaderMaterial({
+      uniforms: {
+        uTime: { value: 0 }, uMorph: { value: 0 }, uHeartMorph: { value: 0 }, uFlameState: { value: 0 },
+        uPixelRatio: { value: renderer.getPixelRatio() }, uHeartColor: { value: CONFIG.colors.heart }, uHeartGlow: { value: CONFIG.colors.heartGlow }
+      },
+      vertexShader: `
+        uniform float uTime; uniform float uMorph; uniform float uHeartMorph; uniform float uFlameState; uniform float uPixelRatio;
+        attribute vec3 target; attribute vec3 heartTarget; attribute float size; attribute vec3 color; attribute float aType;
+        varying vec3 vColor; varying float vAlpha;
+        void main() {
+          vec3 cakePos = mix(position, target, uMorph);
+          vec3 currentPos = mix(cakePos, heartTarget, uHeartMorph);
+          if (uMorph < 1.0 && uHeartMorph < 0.1) { currentPos.x += sin(uTime + position.y) * 0.2 * (1.0 - uMorph); currentPos.z += cos(uTime + position.x) * 0.2 * (1.0 - uMorph); }
+          vColor = color; vAlpha = 1.0;
+          if (aType > 1.5 && uHeartMorph < 0.1) { if (uFlameState < 0.1) { vAlpha = 0.0; } else { float flicker = sin(uTime * 20.0 + position.y * 10.0) * 0.05; currentPos.x += flicker; currentPos.z += flicker; vAlpha = 0.8 + 0.2 * sin(uTime * 15.0); } }
+          vec4 mvPosition = modelViewMatrix * vec4(currentPos, 1.0);
+          gl_Position = projectionMatrix * mvPosition;
+          gl_PointSize = size * 1.5 * uPixelRatio * (25.0 / -mvPosition.z);
+        }
+      `,
+      fragmentShader: `
+        varying vec3 vColor; varying float vAlpha; uniform vec3 uHeartColor; uniform vec3 uHeartGlow; uniform float uHeartMorph;
+        void main() {
+          if (vAlpha < 0.01) discard;
+          vec2 center = gl_PointCoord - 0.5;
+          if (length(center) > 0.5) discard;
+          float glow = 1.0 - (length(center) * 2.0); glow = pow(glow, 2.0);
+          vec3 mixedColor = mix(vColor, uHeartColor, uHeartMorph);
+          if (uHeartMorph > 0.5) { mixedColor = mix(mixedColor, uHeartGlow, glow * 0.5); }
+          gl_FragColor = vec4(mixedColor, vAlpha * glow);
+        }
+      `,
+      transparent: true, depthWrite: false, blending: THREE.AdditiveBlending
+    });
+
+    const particles = new THREE.Points(geometry, material);
+    particlesRef.current = particles;
+    scene.add(particles);
+
+    const clock = new THREE.Clock();
+    let rAF = 0;
+    const animate = () => {
+      const time = clock.getElapsedTime();
+      material.uniforms.uTime.value = time;
+      if (material.uniforms.uHeartMorph.value > 0.1) {
+        controls.enabled = false; controls.autoRotate = false;
+        camera.position.lerp(new THREE.Vector3(0, 0, 14), 0.05); camera.lookAt(0, 0, 0);
+        particles.rotation.set(0, 0, 0); particles.scale.set(1, 1, 1);
+      } else {
+        controls.enabled = true; controls.autoRotate = true; controls.update();
+        particles.rotation.set(0,0,0);
+        if (material.uniforms.uMorph.value < 0.1) particles.rotation.y = time * 0.05;
+      }
+      renderer.render(scene, camera);
+      rAF = requestAnimationFrame(animate);
+    };
+    animate();
+
+    return () => { 
+      cancelAnimationFrame(rAF); 
+      if(rendererRef.current) rendererRef.current.dispose(); 
+      if(geometry) geometry.dispose(); 
+      if(controlsRef.current) controlsRef.current.dispose(); 
+      stopCamera(); 
+    };
+  }, [stopCamera, CONFIG]);
+
+  const triggerAction = useCallback((action: string) => {
+    if (!particlesRef.current) return;
+    const uniforms = (particlesRef.current.material as THREE.ShaderMaterial).uniforms;
+    switch (action) {
+      case 'HEART_MODE':
+        setFeedback({icon: <Heart size={40} className="text-pink-500 fill-pink-500" />, text: "Love!"});
+        gsap.to(uniforms.uMorph, { value: 1, duration: 0.5 });
+        gsap.to(uniforms.uHeartMorph, { value: 1, duration: 2.0, ease: "elastic.out(1, 0.5)" });
+        gsap.to(uniforms.uFlameState, { value: 0, duration: 0.5 });
+        break;
+      case 'CAKE_MODE':
+        gsap.to(uniforms.uHeartMorph, { value: 0, duration: 1.5, ease: "power2.inOut" });
+        break;
+      case 'SCATTERED':
+        setFeedback({icon: <Wind size={40} />, text: "Scattered!"});
+        gsap.to(uniforms.uMorph, { value: 0, duration: 1.5, ease: "power2.inOut" });
+        gsap.to(uniforms.uHeartMorph, { value: 0, duration: 1.0 });
+        gsap.to(uniforms.uFlameState, { value: 0, duration: 0.5 });
+        setSurpriseActive(false);
+        break;
+      case 'ASSEMBLED':
+        if (uniforms.uMorph.value < 0.9) {
+          setFeedback({icon: <Hand size={40} />, text: "Assembled!"});
+          gsap.to(uniforms.uMorph, { value: 1, duration: 1.5, ease: "elastic.out(1, 0.8)" });
+          gsap.to(uniforms.uHeartMorph, { value: 0, duration: 1.0 });
+        }
+        break;
+      case 'LIT':
+        setFeedback({icon: <Flame size={40} className="text-orange-500" />, text: "Lit!"});
+        gsap.to(uniforms.uFlameState, { value: 1, duration: 0.5 });
+        break;
+      case 'EXTINGUISH':
+        setFeedback({icon: <Wind size={40} className="text-blue-300" />, text: "Extinguished!"});
+        gsap.to(uniforms.uFlameState, { value: 0, duration: 0.5 });
+        break;
+    }
+    if(feedback) setTimeout(() => setFeedback(null), 2000);
+  }, [feedback]);
+
+  const onHandResults = (results: any) => {
+    const { cakeState: currentCakeState, surpriseActive: currentSurpriseActive } = stateRef.current;
+
+    if (!results.multiHandLandmarks || results.multiHandLandmarks.length === 0) {
+       setHandVisible(false);
+       setDetectedGesture('No Hand');
+       return;
+    }
+
+    setHandVisible(true);
+    const lm = results.multiHandLandmarks[0];
+
+    const wrist = lm[0];
+    
+    const isExtended = (tipIdx: number, pipIdx: number) => {
+       const dTip = Math.hypot(lm[tipIdx].x - wrist.x, lm[tipIdx].y - wrist.y);
+       const dPip = Math.hypot(lm[pipIdx].x - wrist.x, lm[pipIdx].y - wrist.y);
+       return dTip > dPip;
+    };
+
+    const indexExt = isExtended(8, 6);
+    const middleExt = isExtended(12, 10);
+    const ringExt = isExtended(16, 14);
+    const pinkyExt = isExtended(20, 18);
+
+    const pinchDist = Math.hypot(lm[4].x - lm[8].x, lm[4].y - lm[8].y);
+    const isPinch = pinchDist < CONFIG.thresholds.pinchDist;
+
+    const isPeace = indexExt && middleExt && !ringExt && !pinkyExt && !isPinch;
+    
+    const isFist = !indexExt && !middleExt && !ringExt && !pinkyExt && !isPinch;
+    
+    const isOpen = indexExt && middleExt && ringExt && pinkyExt && !isPinch;
+
+    let currentGesture = 'Unknown';
+    if (isPeace) currentGesture = 'PEACE';
+    else if (isFist) currentGesture = 'FIST';
+    else if (isOpen) currentGesture = 'OPEN';
+    else if (isPinch) currentGesture = 'PINCH';
+    
+    setDetectedGesture(currentGesture);
+
+    const now = Date.now();
+    if (now - lastActionTime.current < 800) return;
+
+    if (isPeace && !currentSurpriseActive) {
+      setSurpriseActive(true);
+      triggerAction('HEART_MODE');
+      lastActionTime.current = now;
+      return;
+    }
+
+    if (isFist) {
+       if (currentSurpriseActive) {
+          setSurpriseActive(false);
+          setCakeState('ASSEMBLED');
+          triggerAction('CAKE_MODE');
+          lastActionTime.current = now;
+       } else if (currentCakeState === 'SCATTERED') {
+          setCakeState('ASSEMBLED');
+          triggerAction('ASSEMBLED');
+          lastActionTime.current = now;
+       }
+       return;
+    }
+
+    if (isPinch && currentCakeState === 'ASSEMBLED' && !currentSurpriseActive) {
+       setCakeState('LIT');
+       triggerAction('LIT');
+       lastActionTime.current = now;
+       return;
+    }
+
+    if (isOpen && currentCakeState !== 'SCATTERED' && !currentSurpriseActive) {
+       setCakeState('SCATTERED');
+       triggerAction('SCATTERED');
+       lastActionTime.current = now;
+       return;
+    }
+  };
+
+  const startCamera = async () => {
+    if (cameraActive.current) return;
+    stopCamera();
+    
+    try {
+        const win = window as any;
+        if (!win.Hands) throw new Error("MediaPipe Hands not loaded");
+
+        const hands = new win.Hands({ locateFile: (file: string) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}` });
+        hands.setOptions({ maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.6, minTrackingConfidence: 0.5 });
+        hands.onResults(onHandResults);
+        handsRef.current = hands;
+
+        const getStream = async (tries: number): Promise<MediaStream> => {
+            try {
+               return await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480, facingMode: 'user' } });
+            } catch (err: any) {
+               if (tries > 0 && (err.name === 'NotReadableError' || err.name === 'TrackStartError')) {
+                   console.warn("Camera busy, retrying in 1s...");
+                   await new Promise(r => setTimeout(r, 1000));
+                   return getStream(tries - 1);
+               }
+               throw err;
+            }
+        };
+
+        const stream = await getStream(1);
+        streamRef.current = stream;
+        
+        if (videoRef.current) {
+            videoRef.current.srcObject = stream;
+            
+            await new Promise<void>((resolve) => {
+                if (videoRef.current!.readyState >= 1) resolve();
+                else videoRef.current!.onloadedmetadata = () => resolve();
+            });
+            await videoRef.current.play();
+            
+            cameraActive.current = true;
+            setCameraAuthorized(true);
+            setCameraError(null);
+
+            const loop = async () => {
+                if (!cameraActive.current || !videoRef.current || !handsRef.current) return;
+                if(videoRef.current.readyState === 4 && !videoRef.current.paused && !videoRef.current.ended) {
+                  try {
+                     await handsRef.current.send({ image: videoRef.current });
+                  } catch(e) { /* ignore tracking errors */ }
+                }
+                if (cameraActive.current) requestAnimationFrame(loop);
+            };
+            loop();
+        }
+    } catch (e: any) {
+        console.error(e);
+        let msg = "Camera denied";
+        if (e.name === 'NotReadableError' || e.name === 'TrackStartError') msg = "Camera in use. Please close other apps.";
+        else if (e.name === 'NotAllowedError') msg = "Permission denied";
+        setCameraError(msg);
+        cameraActive.current = false;
+        stopCamera();
+    }
+  };
+
+  const startMic = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const AC = window.AudioContext || (window as any).webkitAudioContext;
+      const ctx = new AC();
+      const analyser = ctx.createAnalyser();
+      ctx.createMediaStreamSource(stream).connect(analyser);
+      analyser.fftSize = 256;
+      analyserRef.current = analyser; setMicActive(true);
+      const checkAudio = () => {
+        if (analyserRef.current) {
+          const data = new Uint8Array(analyserRef.current.frequencyBinCount);
+          analyserRef.current.getByteFrequencyData(data);
+          let sum = 0; for(let i=0; i<data.length; i++) sum += data[i];
+          const avg = sum / data.length;
+          
+          if (avg > CONFIG.thresholds.audioLevel) {
+             blowTriggerCount.current++;
+             if (blowTriggerCount.current > 15) { 
+                triggerAction('EXTINGUISH'); 
+                blowTriggerCount.current = 0; 
+             }
+          } else {
+             blowTriggerCount.current = Math.max(0, blowTriggerCount.current - 2);
+          }
+        }
+        audioCheckRaf.current = requestAnimationFrame(checkAudio);
+      };
+      checkAudio();
+    } catch(e) {}
+  };
+
+  return (
+    <div className="relative w-full h-screen bg-black overflow-hidden select-none">
+      <div ref={containerRef} className="absolute inset-0 z-10 cursor-pointer" onClick={() => {
+          if(surpriseActive) { setSurpriseActive(false); setCakeState('ASSEMBLED'); triggerAction('CAKE_MODE'); }
+          else if(cakeState === 'SCATTERED') triggerAction('ASSEMBLED');
+          else if(cakeState === 'ASSEMBLED') triggerAction('LIT');
+          else if(cakeState === 'LIT') triggerAction('EXTINGUISH');
+      }} />
+      <AnimatePresence>
+        {surpriseActive && (
+          <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }} className="absolute inset-0 z-30 flex flex-col items-center justify-center pointer-events-none px-4">
+            <div className="text-center relative max-w-full translate-y-16">
+              <div className="absolute inset-0 bg-pink-500/20 blur-[60px] rounded-full"></div>
+              <motion.div className="text-6xl md:text-8xl font-black mb-2 tracking-wider relative z-10 font-hand pt-8 pb-4 leading-normal" style={{ background: 'linear-gradient(135deg, #FFE6F2 0%, #FF80B0 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', filter: 'drop-shadow(0px 0px 15px rgba(255, 128, 176, 0.8))' }} animate={{ y: [0, -10, 0] }} transition={{ y: { duration: 3, repeat: Infinity, ease: "easeInOut" } }}>小叶同学</motion.div>
+              <motion.div className="text-5xl md:text-7xl font-bold text-white relative z-10 font-hand mt-2 py-2 leading-relaxed" style={{ textShadow: '0 4px 10px rgba(255, 20, 147, 0.6)' }} animate={{ scale: [1, 1.05, 1] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}>生日快乐</motion.div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      <div className="absolute top-24 right-6 z-40 flex flex-col items-end gap-2">
+        <div className={`relative w-48 aspect-[4/3] rounded-xl overflow-hidden border-2 border-white/20 shadow-2xl bg-black/80 transition-opacity duration-500 ${cameraAuthorized ? 'opacity-100' : 'opacity-90'}`}>
+          <video ref={videoRef} className="absolute inset-0 w-full h-full object-cover opacity-60 mirror-x" playsInline muted />
+          {!cameraAuthorized && !cameraError && <div className="absolute inset-0 flex flex-col items-center justify-center text-white/50 text-xs"><Camera size={20} /><span>Click Start Camera</span></div>}
+          {cameraError && <div className="absolute inset-0 flex flex-col items-center justify-center text-red-400 bg-black/80 text-center p-2"><XCircle size={24} /><span className="text-xs font-bold mt-1">{cameraError}</span></div>}
+        </div>
+        <div className="bg-black/50 backdrop-blur-md px-3 py-1 rounded-lg border border-white/10 text-xs font-mono text-usagi-orange">
+           GESTURE: <span className="font-bold text-white uppercase">{detectedGesture}</span>
+        </div>
+      </div>
+      <div className="absolute bottom-8 left-8 z-50 w-72 bg-white/10 backdrop-blur-xl p-5 rounded-2xl border border-white/20 text-white shadow-xl">
+        <h3 className="font-bold text-usagi-orange mb-4 flex items-center gap-2 text-lg"><Sparkles size={18} fill="currentColor" /> Magic Controls</h3>
+        <div className="flex flex-col gap-2 mb-4">
+          {!cameraAuthorized && <button onClick={startCamera} className="w-full bg-usagi-main hover:bg-usagi-hover text-usagi-text font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 transition-transform active:scale-95"><Camera size={18} /> Start Camera</button>}
+          {!micActive && <button onClick={startMic} className="w-full bg-white/10 hover:bg-white/20 text-white font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 border border-white/10 transition-colors"><Mic size={18} /> Enable Blow (Mic)</button>}
+        </div>
+        <div className="space-y-2 text-sm text-white/80 bg-black/20 p-3 rounded-xl">
+          <div className="flex justify-between items-center"><span className="flex items-center gap-2">✌️ Peace</span><span className="font-mono text-[10px] bg-pink-500/20 px-1 rounded text-pink-300">SURPRISE!</span></div>
+          <div className="flex justify-between items-center"><span className="flex items-center gap-2">✊ Fist</span><span className="font-mono text-[10px] bg-white/10 px-1 rounded">ASSEMBLE</span></div>
+          <div className="flex justify-between items-center"><span className="flex items-center gap-2">✋ Open</span><span className="font-mono text-[10px] bg-white/10 px-1 rounded">SCATTER</span></div>
+          <div className="flex justify-between items-center"><span className="flex items-center gap-2">👌 Pinch</span><span className="font-mono text-[10px] bg-orange-500/20 px-1 rounded text-orange-300">LIGHT FLAME</span></div>
+          <div className="flex justify-between items-center"><span className="flex items-center gap-2">🌬️ Blow</span><span className="font-mono text-[10px] bg-blue-500/20 px-1 rounded text-blue-300">EXTINGUISH</span></div>
+        </div>
+      </div>
+      {feedback && <motion.div initial={{ opacity: 0, scale: 0.5, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.8, y: -20 }} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[60] flex flex-col items-center gap-3 pointer-events-none"><div className="p-8 bg-black/70 backdrop-blur-lg rounded-full text-white shadow-2xl border-4 border-white/10">{feedback.icon}</div><span className="text-white font-bold text-2xl text-shadow-lg tracking-wide bg-black/40 px-4 py-1 rounded-lg backdrop-blur">{feedback.text}</span></motion.div>}
+    </div>
+  );
+};
+
+// SCENE 5: Outro
+const Scene5Outro = () => {
+  const [message, setMessage] = useState("Wishing you happiness every day!");
+  const [isEditing, setIsEditing] = useState(false);
+  const captureRef = useRef<HTMLDivElement | null>(null);
+  const [captured, setCaptured] = useState(false);
+  const handleCapture = async () => {
+    if (captureRef.current) {
+      setCaptured(true);
+      try {
+        const canvas = await html2canvas(captureRef.current, { backgroundColor: null, scale: 2, useCORS: true });
+        const link = document.createElement('a'); link.download = 'usagi-birthday-wish.png'; link.href = canvas.toDataURL('image/png'); link.click();
+      } catch (err) {}
+      setCaptured(false);
+    }
+  };
+  return (
+    <div className="w-full h-full flex flex-col items-center justify-center p-4 z-40 relative">
+      <div className="absolute inset-0 pointer-events-none overflow-hidden z-0"><div className="absolute top-20 left-10 text-6xl opacity-60 rotate-12 animate-bounce-slow">🥕</div><div className="absolute top-32 right-20 text-5xl opacity-50 -rotate-12 animate-pulse">✨</div></div>
+      <div ref={captureRef} className="relative flex flex-col items-center justify-center p-12 rounded-[3rem] w-full max-w-3xl z-10">
+        <div className="absolute inset-0 bg-[#F9D59B]/20 backdrop-blur-[2px] rounded-[3rem] border-4 border-white/40 -z-10"></div>
+        <div className="w-72 h-72 md:w-96 md:h-96 relative filter drop-shadow-xl"><UsagiCharacter action="hold-board" className="w-full h-full" boardText={message} /></div>
+      </div>
+      <div className="mt-8 w-full max-w-md bg-white/95 backdrop-blur rounded-3xl p-6 shadow-2xl border-4 border-usagi-main z-50">
+        {isEditing ? (
+          <div className="flex flex-col gap-4"><textarea value={message} onChange={(e) => setMessage(e.target.value)} className="w-full p-4 border-2 border-usagi-orange rounded-2xl font-hand text-2xl" rows={3} /><button onClick={() => setIsEditing(false)} className="bg-usagi-main text-usagi-text font-bold py-3 rounded-xl hover:bg-usagi-orange">Update Board ✨</button></div>
+        ) : (
+          <div className="flex justify-between items-center gap-3"><button onClick={() => setIsEditing(true)} className="flex-1 flex items-center justify-center gap-2 bg-usagi-light text-usagi-text py-4 rounded-2xl border-2 border-usagi-main hover:bg-white"><PenTool size={20} /> Edit Wish</button><button onClick={handleCapture} className="flex-1 flex items-center justify-center gap-2 bg-usagi-pink text-white py-4 rounded-2xl shadow-md border-2 border-white"><Download size={20} /> Save Card</button></div>
+        )}
+      </div>
+      {captured && <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} className="fixed bottom-24 bg-usagi-text text-white px-8 py-4 rounded-full shadow-2xl z-[60] font-bold text-xl flex items-center gap-2"><span>📸</span> Saved!</motion.div>}
+    </div>
+  );
+};
+
+// --- APP ROOT ---
+const App = () => {
+  const [scene, setScene] = useState('LOGIN');
+  const [muted, setMuted] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  
+  // Initial Background Music (separate from record player)
+  useEffect(() => { audioRef.current = new Audio(ASSETS.sounds.bgm); audioRef.current.loop = true; audioRef.current.volume = 0.4; }, []);
+  
+  const toggleAudio = () => { if(audioRef.current) { audioRef.current.volume = muted ? 0.4 : 0; setMuted(!muted); } };
+  const start = () => { audioRef.current?.play().catch(()=>{}); setScene('PHOTO_WALL'); };
+  
+  const handleLoginSuccess = () => {
+     audioRef.current?.play().catch(()=>{}); 
+     setScene('INTRO');
+  };
+
+  const pauseBGM = () => {
+     if(audioRef.current) audioRef.current.pause();
+  };
+
+  const back = () => { 
+    if(scene==='PHOTO_WALL') setScene('INTRO'); 
+    if(scene==='WISHES') setScene('PHOTO_WALL'); 
+    if(scene==='CAKE') setScene('WISHES'); 
+    if(scene==='VINYL') { 
+       setScene('WISHES'); 
+       if(!muted) audioRef.current?.play().catch(()=>{});
+    }
+    if(scene==='OUTRO') setScene('WISHES'); 
+  };
+
+  return (
+    <div className="relative min-h-screen font-sans text-usagi-text overflow-hidden selection:bg-usagi-pink selection:text-white">
+      {scene !== 'LOGIN' && scene !== 'VINYL' && <Background />}
+      
+      {scene !== 'VINYL' && (
+         <div className="fixed top-4 right-4 z-50"><button onClick={toggleAudio} className="bg-white/80 p-3 rounded-full shadow-md hover:bg-white border border-usagi-main">{muted ? <VolumeX size={24}/> : <Volume2 size={24}/>}</button></div>
+      )}
+      
+      <BackButton onClick={back} disabled={scene==='INTRO' || scene==='LOGIN' || scene==='VINYL'} />
+      
+      <AnimatePresence mode="wait">
+        {scene === 'LOGIN' && <Scene0Login key="login" onLogin={handleLoginSuccess} />}
+        {scene === 'INTRO' && <Scene1Intro key="intro" onStart={start} />}
+      </AnimatePresence>
+      
+      {scene !== 'INTRO' && scene !== 'LOGIN' && scene !== 'VINYL' && <div className={`absolute inset-0 z-0 flex items-center justify-center transition-opacity duration-500 ${scene==='CAKE'?'opacity-20':'opacity-100'}`}><Scene2PhotoWall isActive={scene==='PHOTO_WALL'} onNext={()=>setScene('WISHES')} showButton={scene==='PHOTO_WALL'} isBackgroundMode={scene!=='PHOTO_WALL'} /></div>}
+      
+      <AnimatePresence>
+        {scene === 'WISHES' && <motion.div key="wishes" className="absolute inset-0 z-10" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}><Scene3Wishes onGoToCakeInteraction={()=>setScene('CAKE')} onGoToOutro={()=>setScene('OUTRO')} onGoToMusic={()=>setScene('VINYL')} pauseBGM={pauseBGM}/></motion.div>}
+        
+        {/* FIXED: Resume BGM when exiting vinyl player */}
+        {scene === 'VINYL' && (
+          <motion.div key="vinyl" className="absolute inset-0 z-[100]" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}>
+              <SceneVinylPlayer onBack={() => {
+                  setScene('WISHES');
+                  if (!muted && audioRef.current) {
+                      audioRef.current.play().catch(e => console.log("BGM resume failed", e));
+                  }
+              }} />
+          </motion.div>
+        )}
+        
+        {scene === 'CAKE' && <motion.div key="cake" className="absolute inset-0 z-20 bg-black/60 backdrop-blur-sm" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}><Scene4CakeInteraction /></motion.div>}
+        {scene === 'OUTRO' && <motion.div key="outro" className="absolute inset-0 z-20" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}><Scene5Outro /></motion.div>}
+      </AnimatePresence>
+    </div>
+  );
+};
+
+export default App;

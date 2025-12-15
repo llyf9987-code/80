@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Happy Birthday Xiao Ye! | Usagi Wishes</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;600&family=Zeyada&family=ZCOOL+KuaiLe&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    
+    <!-- MediaPipe Hands -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/hands.js" crossorigin="anonymous"></script>
+    
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              usagi: {
+                main: '#F9D59B', orange: '#FBBF77', gold: '#F8C860',
+                pink: '#F8C8DC', text: '#5D4037', light: '#FFFBE6', hover: '#F7C070',
+                cream: '#FFF9E6', wood: '#8D6E63', woodDark: '#5D4037'
+              },
+              vinyl: {
+                bg: '#1a1510',
+                gold: '#C5A059',
+                goldDim: '#6b5735',
+                text: '#E8DCC5'
+              }
+            },
+            fontFamily: {
+              sans: ['Fredoka', 'sans-serif'],
+              hand: ['Zeyada', 'cursive'],
+              cute: ['"ZCOOL KuaiLe"', 'cursive'],
+              serif: ['"Playfair Display"', 'serif'],
+            },
+            animation: {
+              'float': 'float 3s ease-in-out infinite',
+              'bounce-slow': 'bounce 2s infinite',
+              'drift': 'drift 10s linear infinite',
+              'spin-slow': 'spin 8s linear infinite',
+              'spin-vinyl': 'spin 4s linear infinite',
+              'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            },
+            keyframes: {
+              float: { '0%, 100%': { transform: 'translateY(0)' }, '50%': { transform: 'translateY(-10px)' } },
+              drift: { '0%': { transform: 'translateY(0) rotate(0deg)', opacity: '0' }, '50%': { opacity: '0.5' }, '100%': { transform: 'translateY(100px) rotate(180deg)', opacity: '0' } }
+            },
+            boxShadow: {
+              'soft': '0 8px 32px rgba(93, 64, 55, 0.15)',
+              'glow': '0 0 15px rgba(240, 98, 146, 0.5)',
+              'vinyl': '0 4px 15px rgba(0,0,0,0.6), inset 0 0 0 2px #111, inset 0 0 0 10px #333',
+              'gold-glow': '0 0 20px rgba(197, 160, 89, 0.3)',
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+      /* Apply cursor to html and body with specific hotspot coordinates (0 0) */
+      html, body { 
+        background-color: #F9D59B; 
+        overflow-x: hidden; 
+        cursor: url('https://test.fukit.cn/autoupload/f/IeSYb0Mnf1Z62nIKYGB4NyfNcKcqEnRmcljopnyJoMs/20251214/B4LO/32X33/usagi-cursor.png/webp') 0 0, auto !important;
+      }
+      
+      .scrollbar-hide::-webkit-scrollbar { display: none; }
+      .mirror-x { transform: scaleX(-1); }
+      
+      /* Refined Glassmorphism */
+      .glass-card {
+        background: rgba(0, 0, 0, 0.25);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+      }
+
+      /* Text Shadow Utilities for Title */
+      .title-glow {
+        text-shadow: 2px 2px 0px #FFF, 0 0 10px #F06292;
+      }
+      
+      /* Button Text Stroke Simulation */
+      .btn-text-stroke {
+        text-shadow: 1px 1px 0px rgba(160, 80, 0, 0.3);
+      }
+
+      /* Vinyl Record Texture */
+      .vinyl-grooves {
+        background: 
+          repeating-radial-gradient(
+            #111 0, 
+            #111 2px, 
+            #181818 3px, 
+            #181818 4px
+          );
+      }
+      .vinyl-shine {
+        background: conic-gradient(
+          rgba(255,255,255,0) 0%,
+          rgba(255,255,255,0.05) 20%,
+          rgba(255,255,255,0) 25%,
+          rgba(255,255,255,0) 45%,
+          rgba(255,255,255,0.08) 50%,
+          rgba(255,255,255,0) 55%,
+          rgba(255,255,255,0) 70%,
+          rgba(255,255,255,0.05) 80%,
+          rgba(255,255,255,0) 100%
+        );
+      }
+      
+      /* Lyrics Scroll Mask */
+      .lyrics-mask {
+        mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
+        -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "react": "https://esm.sh/react@^19.2.3",
+    "lucide-react": "https://esm.sh/lucide-react@^0.561.0",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "canvas-confetti": "https://esm.sh/canvas-confetti@^1.9.4",
+    "html2canvas": "https://esm.sh/html2canvas@^1.4.1",
+    "framer-motion": "https://esm.sh/framer-motion@^12.23.26",
+    "three/": "https://esm.sh/three@^0.182.0/",
+    "three": "https://esm.sh/three@^0.182.0",
+    "gsap": "https://esm.sh/gsap@^3.14.2"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body>
+    <div id="root"></div>
+  <script type="module" src="/index.tsx"></script>
+</body>
+</html>

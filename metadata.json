@@ -1,0 +1,8 @@
+{
+  "name": "Happy Birthday Xiao Ye",
+  "description": "An interactive birthday wish application with music, visuals, and gestures.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
